@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daftar Booking</title>
+<style>
+  body {
+    margin: 0;
+    background: #14141f;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div style="text-align:center; padding: 16px;">
+  <button onclick="aktifkanNotifikasi()" style="
+    padding: 10px 20px; border-radius: 8px; background:#00ffcc;
+    color:#000; border:none; cursor:pointer; font-weight:bold;">
+    🔔 Aktifkan Notifikasi
+  </button>
+  <p id="statusNotif" style="color:#aaa; font-size: 12px;">Notifikasi belum diaktifkan</p>
+</div>
+
+<!-- Modal Booking -->
+<div id="bookingModal" style="
+  display: flex;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  justify-content: center; align-items: center;
+  z-index: 5000;
+  box-sizing: border-box;
+  padding: 10px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+
+  <div class="modal-booking-content" style="
+    background: #1e1e2f;
+    color: #f0f0f0;
+    padding: 20px;
+    border-radius: 14px;
+    max-width: 420px;
+    width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 0 0 15px #00ffccaa;
+    position: relative;
+    box-sizing: border-box;">
+
+    <h3 style="text-align: center; margin-top: 0; color: #00ffcc; font-size: max(16px, 1.6vw);">🎮 Daftar Sesi Booking</h3>
+
+    <div id="bookingList" style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 15px; box-sizing: border-box;">
+      <!-- Diisi lewat JavaScript -->
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase SDK (compat, supaya cocok dengan service worker) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
