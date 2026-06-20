@@ -77,7 +77,16 @@ async function muatBookingData() {
   try {
     const res = await fetch(`${GAS_API_URL}?action=getBookingData`);
     const data = await res.json();
-    showBookingList(data);
+
+    // Normalisasi nama key: getBookingData() di GAS mengambil key dari
+    // header kolom Sheet apa adanya (misal "Jam Mulai" -> "jam mulai"),
+    // sedangkan kode tampilan di sini mengharapkan key "jam".
+    const dataNormalisasi = data.map(row => ({
+      ...row,
+      jam: row.jam || row["jam mulai"] || row["jam booking"]
+    }));
+
+    showBookingList(dataNormalisasi);
   } catch (err) {
     console.error("Gagal memuat data booking:", err);
   }
