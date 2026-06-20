@@ -98,7 +98,7 @@ function toggleSuara(nama, tombol) {
     tombol.innerHTML = "🔇";
     tombol.title = "Aktifkan suara";
   } else {
-    const suara = new Audio("https://actions.google.com/sounds/v1/alarms/medium_bell_ringing_near.ogg");
+    const suara = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
     suara.play().then(() => suara.pause()).catch(() => {});
     suaraAktif[nama] = true;
     tombol.innerHTML = "🔔";
@@ -128,7 +128,7 @@ function checkAlarmTiapDetik() {
     if (sisaMenit <= 2 && sisaMenit > 0 && !alarmSudahBunyi[row.nama]) {
       let jumlahBunyi = 0;
       alarmSudahBunyi[row.nama] = setInterval(() => {
-        const suara = new Audio("https://actions.google.com/sounds/v1/alarms/medium_bell_ringing_near.ogg");
+        const suara = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
         suara.play().catch(() => {});
         jumlahBunyi++;
         if (jumlahBunyi >= 3) {
