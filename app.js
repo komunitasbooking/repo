@@ -2,7 +2,7 @@
 // ====================================================================
 // GANTI ini dengan URL Web App GAS kamu (yang berakhiran /exec)
 // ====================================================================
-const GAS_API_URL = "GANTI_DENGAN_URL_EXEC_GAS_KAMU";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRVIJrx6z3nvRHFSd2V8KL_v_8g8FIZQS6yS7CGDuPQNEXmxE0KweAMkijpda8ydlbQQ/exec";
 
 // VAPID key dari Firebase Console -> Project Settings -> Cloud Messaging
 const VAPID_KEY = "BPu-CkKjzdXNPh8N-287d2gGxC2dj27HWHdcGvhtDEJ-IMTJGkAlWeJZdsbp8e2QywGAAaR1MUz4owfIwKUnwTQ";
