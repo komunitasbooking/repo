@@ -131,7 +131,7 @@ function checkAlarmTiapDetik() {
         const suara = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
         suara.play().catch(() => {});
         jumlahBunyi++;
-        if (jumlahBunyi >= 3) {
+        if (jumlahBunyi >= 1) {
           clearInterval(alarmSudahBunyi[row.nama]);
           delete alarmSudahBunyi[row.nama];
         }
