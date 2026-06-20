@@ -20,7 +20,6 @@ messaging.onBackgroundMessage((payload) => {
   const title = (payload.notification && payload.notification.title) || "Notifikasi Booking";
   const options = {
     body: (payload.notification && payload.notification.body) || "",
-    icon: "icon.png", // opsional: sediakan file icon.png di root repo, atau hapus baris ini
     vibrate: [200, 100, 200]
   };
 
