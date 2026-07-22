@@ -24,6 +24,125 @@ const suaraAktif = JSON.parse(localStorage.getItem("suaraAktif") || "{}");
 let dataBookingTerakhir = [];
 const alarmSudahBunyi = {};
 
+// =================== BARU: Katalog kosmetik (border, pet, ornamen) ===================
+
+const BORDER_COLORS = {
+  border_default: "#dddddd",
+  border_50: "#cd7f32",
+  border_100: "#c0c0c0",
+  border_200: "#ffd700"
+};
+
+const BORDER_STYLES = {
+  border_default: `1px solid ${BORDER_COLORS.border_default}`,
+  border_50: `1px solid ${BORDER_COLORS.border_50}`,
+  border_100: `1px solid ${BORDER_COLORS.border_100}`,
+  border_200: `1px solid ${BORDER_COLORS.border_200}`
+};
+
+const PET_ANIMASI_CLASS = {
+  pet_50: "pet-border-elang",
+  pet_100: "pet-border-singa",
+  pet_200: "pet-border-naga"
+};
+
+const PET_ORNAMEN = {
+  pet_50: { icon: "🍃", kelas: "ornamen-elang" },
+  pet_100: { icon: "⚡", kelas: "ornamen-singa" },
+  pet_200: { icon: "🔥", kelas: "ornamen-naga" }
+};
+
+function buatOrnamenSudut(petId) {
+  const ornamen = PET_ORNAMEN[petId];
+  if (!ornamen) return "";
+
+  const posisi = [
+    { top: "-8px", left: "-8px", delay: "0s" },
+    { top: "-8px", right: "-8px", delay: "0.3s" },
+    { bottom: "-8px", left: "-8px", delay: "0.6s" },
+    { bottom: "-8px", right: "-8px", delay: "0.9s" }
+  ];
+
+  return posisi.map(p => {
+    const posisiCSS = Object.entries(p)
+      .filter(([k]) => k !== "delay")
+      .map(([k, v]) => `${k}:${v}`)
+      .join(";");
+    return `<span class="pet-ornamen ${ornamen.kelas}" style="${posisiCSS}; animation-delay:${p.delay};">${ornamen.icon}</span>`;
+  }).join("");
+}
+
+// Suntik CSS animasi border + ornamen sekali saja saat script dimuat
+(function suntikStyleKostum() {
+  if (document.getElementById('styleBookingAktif')) return;
+
+  const style = document.createElement('style');
+  style.id = 'styleBookingAktif';
+  style.textContent = `
+    @keyframes windBorder {
+      0%   { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
+      25%  { transform: translateX(1px) rotate(0.3deg); filter: brightness(1.3); }
+      50%  { transform: translateX(-1px) rotate(-0.3deg); filter: brightness(1); }
+      75%  { transform: translateX(1px) rotate(0.2deg); filter: brightness(1.3); }
+      100% { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
+    }
+    .pet-border-elang { animation: windBorder 2.2s ease-in-out infinite; }
+
+    @keyframes lightningBorder {
+      0%, 100% { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+      3%       { border-color: #ffffff; box-shadow: 0 0 20px var(--warna-kostum); }
+      6%       { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+      45%      { border-color: #ffffff; box-shadow: 0 0 18px var(--warna-kostum); }
+      48%      { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+    }
+    .pet-border-singa { animation: lightningBorder 2.4s linear infinite; }
+
+    @keyframes fireBorder {
+      0%   { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
+      33%  { box-shadow: 0 0 14px var(--warna-kostum); }
+      66%  { box-shadow: 0 0 10px var(--warna-kostum); }
+      100% { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
+    }
+    .pet-border-naga { animation: fireBorder 1.1s ease-in-out infinite; }
+
+    .card-booking-aktif {
+      border-width: 2px;
+      border-style: solid;
+      position: relative;
+      overflow: visible;
+    }
+
+    .pet-ornamen {
+      position: absolute;
+      font-size: 14px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes daunGoyang {
+      0%   { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
+      50%  { transform: rotate(15deg) translateY(-2px); opacity: 1; }
+      100% { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
+    }
+    .ornamen-elang { animation: daunGoyang 1.8s ease-in-out infinite; }
+
+    @keyframes kilatMuncul {
+      0%, 90%, 100% { opacity: 0; transform: scale(0.7); }
+      3%, 6%        { opacity: 1; transform: scale(1.15); }
+      45%, 48%      { opacity: 1; transform: scale(1.1); }
+    }
+    .ornamen-singa { animation: kilatMuncul 2.4s linear infinite; }
+
+    @keyframes apiMenyala {
+      0%   { transform: translateY(0) scale(0.9); opacity: 0.8; }
+      50%  { transform: translateY(-3px) scale(1.15); opacity: 1; }
+      100% { transform: translateY(0) scale(0.9); opacity: 0.8; }
+    }
+    .ornamen-naga { animation: apiMenyala 1.1s ease-in-out infinite; }
+  `;
+  document.head.appendChild(style);
+})();
+
 // =================== Setup Push Notification ===================
 
 async function aktifkanNotifikasi() {
@@ -48,7 +167,6 @@ async function aktifkanNotifikasi() {
       return;
     }
 
-    // Kirim token ke GAS. Pakai text/plain agar tidak memicu CORS preflight.
     await fetch(GAS_API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -63,7 +181,6 @@ async function aktifkanNotifikasi() {
   }
 }
 
-// Tampilkan status awal kalau sebelumnya sudah pernah aktif di device ini
 window.addEventListener("load", () => {
   const namaTersimpan = localStorage.getItem("namaUser");
   if (namaTersimpan) {
@@ -75,12 +192,10 @@ window.addEventListener("load", () => {
 
 async function muatBookingData() {
   try {
-    const res = await fetch(`${GAS_API_URL}?action=getBookingData`);
+    // BARU: action diganti supaya server menyisipkan border & pet, bukan data booking polos
+    const res = await fetch(`${GAS_API_URL}?action=getAllBookingDenganKostum`);
     const data = await res.json();
 
-    // Normalisasi nama key: getBookingData() di GAS mengambil key dari
-    // header kolom Sheet apa adanya (misal "Jam Mulai" -> "jam mulai"),
-    // sedangkan kode tampilan di sini mengharapkan key "jam".
     const dataNormalisasi = data.map(row => ({
       ...row,
       jam: row.jam || row["jam mulai"] || row["jam booking"]
@@ -107,8 +222,6 @@ function toggleSuara(nama, tombol) {
   localStorage.setItem("suaraAktif", JSON.stringify(suaraAktif));
 }
 
-// Alarm lokal (bonus, jalan kalau tab sedang dibuka & aktif di foreground).
-// Untuk kondisi tab/app tertutup atau HP idle, andalkan push dari server.
 function checkAlarmTiapDetik() {
   const now = new Date();
 
@@ -141,7 +254,6 @@ function checkAlarmTiapDetik() {
 }
 setInterval(checkAlarmTiapDetik, 1000);
 
-// Notifikasi foreground (saat tab sedang dibuka & aktif)
 messaging.onMessage((payload) => {
   const title = (payload.notification && payload.notification.title) || "Notifikasi";
   const body = (payload.notification && payload.notification.body) || "";
@@ -189,17 +301,33 @@ function showBookingList(data) {
     dataAktif.forEach(row => {
       const endStr = row.endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const statusBadge = row.isPlaying ? "🔥 SEDANG MAIN" : "⏳ MENUNGGU";
+
+      // BARU: border kustom user (fallback default kalau belum ada)
+      const borderCSS = BORDER_STYLES[row.border] || BORDER_STYLES.border_default;
+
       const bgCard = row.isPlaying
-        ? "background: rgba(46, 204, 113, 0.12); border: 1px solid #2ecc71;"
-        : "background: #2c2c3e; border: 1px solid #444;";
+        ? `background: rgba(46, 204, 113, 0.12); border: ${borderCSS};`
+        : `background: #2c2c3e; border: ${borderCSS};`;
 
       const card = document.createElement("div");
+
+      // BARU: class animasi border, cuma aktif kalau sesi sedang berjalan
+      const kelasAnimasi = row.isPlaying ? (PET_ANIMASI_CLASS[row.pet] || "") : "";
+      card.className = row.isPlaying ? `card-booking-aktif ${kelasAnimasi}`.trim() : "";
+
       card.style.cssText = `
         display: flex; flex-direction: column; gap: 6px;
         ${bgCard} padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box;
       `;
 
+      // BARU: warna animasi ikut border tier user
+      card.style.setProperty('--warna-kostum', BORDER_COLORS[row.border] || BORDER_COLORS.border_default);
+
+      // BARU: ornamen sudut (daun/kilat/api) sesuai pet, cuma kalau sedang aktif
+      const ornamenSudut = row.isPlaying ? buatOrnamenSudut(row.pet) : "";
+
       card.innerHTML = `
+        ${ornamenSudut}
         <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
           <div style="font-weight:bold;color:#fff;font-size:13px;word-break:break-word;max-width:55%;">
             ${row.nama}
