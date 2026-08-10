@@ -65,7 +65,7 @@ function buatOrnamenSudut(gaya, icon) {
 }
 
 // Suntik CSS animasi border + ornamen sekali saja saat script dimuat
-function suntikStyleKostum() {
+(function suntikStyleKostum() {
   if (document.getElementById('styleBookingAktif')) return;
 
   const style = document.createElement('style');
