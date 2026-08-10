@@ -46,34 +46,26 @@ const PET_ANIMASI_CLASS = {
   pet_200: "pet-border-naga"
 };
 
-const PET_ORNAMEN = {
-  pet_50: { icon: "🍃", kelas: "ornamen-elang" },
-  pet_100: { icon: "⚡", kelas: "ornamen-singa" },
-  pet_200: { icon: "🔥", kelas: "ornamen-naga" }
-};
-
-function buatOrnamenSudut(petId) {
-  const ornamen = PET_ORNAMEN[petId];
-  if (!ornamen) return "";
-
+function buatOrnamenSudut(gaya, icon) {
+  if (!gaya || !icon) return "";
+  const kelas = "ornamen-" + gaya;
   const posisi = [
     { top: "-8px", left: "-8px", delay: "0s" },
     { top: "-8px", right: "-8px", delay: "0.3s" },
     { bottom: "-8px", left: "-8px", delay: "0.6s" },
     { bottom: "-8px", right: "-8px", delay: "0.9s" }
   ];
-
   return posisi.map(p => {
     const posisiCSS = Object.entries(p)
       .filter(([k]) => k !== "delay")
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
-    return `<span class="pet-ornamen ${ornamen.kelas}" style="${posisiCSS}; animation-delay:${p.delay};">${ornamen.icon}</span>`;
+    return `<span class="pet-ornamen ${kelas}" style="${posisiCSS}; animation-delay:${p.delay};">${icon}</span>`;
   }).join("");
 }
 
 // Suntik CSS animasi border + ornamen sekali saja saat script dimuat
-(function suntikStyleKostum() {
+function suntikStyleKostum() {
   if (document.getElementById('styleBookingAktif')) return;
 
   const style = document.createElement('style');
