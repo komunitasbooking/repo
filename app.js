@@ -62,10 +62,9 @@ function buatOrnamenSudut(gaya, icon) {
       .join(";");
     return `<span class="pet-ornamen ${kelas}" style="${posisiCSS}; animation-delay:${p.delay};">${icon}</span>`;
   }).join("");
-}
 
 // Suntik CSS animasi border + ornamen sekali saja saat script dimuat
-(function suntikStyleKostum() {
+function suntikStyleKostum() {
   if (document.getElementById('styleBookingAktif')) return;
 
   const style = document.createElement('style');
