@@ -265,7 +265,92 @@ messaging.onMessage((payload) => {
 function showBookingList(data) {
   dataBookingTerakhir = data || [];
   const tbody = document.getElementById("bookingList");
+  if (!tbody) return console.error("❌ Elemen #bookingList tidak ditemukan di HTML!");
+
   tbody.innerHTML = "";
+
+  // Cuma 3 gaya animasi CSS yang memang ada — ini boleh tetap hardcode
+  const GAYA_ANIMASI_CLASS = {
+    elang: "pet-border-elang",
+    singa: "pet-border-singa",
+    naga: "pet-border-naga"
+  };
+
+  if (typeof suaraAktif === 'undefined') {
+    window.suaraAktif = {};
+  }
+
+  // BARU: suntik animasi glow/melayang sekali saja
+  if (!document.getElementById('styleBookingAktif')) {
+    const style = document.createElement('style');
+    style.id = 'styleBookingAktif';
+    style.textContent = `
+    @keyframes windBorder {
+      0%   { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
+      25%  { transform: translateX(1px) rotate(0.3deg); filter: brightness(1.3); }
+      50%  { transform: translateX(-1px) rotate(-0.3deg); filter: brightness(1); }
+      75%  { transform: translateX(1px) rotate(0.2deg); filter: brightness(1.3); }
+      100% { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
+    }
+    .pet-border-elang { animation: windBorder 2.2s ease-in-out infinite; }
+
+    @keyframes lightningBorder {
+      0%, 100% { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+      3%       { border-color: #ffffff; box-shadow: 0 0 20px var(--warna-kostum); }
+      6%       { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+      45%      { border-color: #ffffff; box-shadow: 0 0 18px var(--warna-kostum); }
+      48%      { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
+    }
+    .pet-border-singa { animation: lightningBorder 2.4s linear infinite; }
+
+    @keyframes fireBorder {
+      0%   { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
+      33%  { box-shadow: 0 0 14px var(--warna-kostum); }
+      66%  { box-shadow: 0 0 10px var(--warna-kostum); }
+      100% { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
+    }
+    .pet-border-naga { animation: fireBorder 1.1s ease-in-out infinite; }
+
+    .card-booking-aktif { 
+        border-width: 2px; 
+        border-style: solid; 
+        position: relative; /* BARU: perlu relative supaya ornamen sudut bisa absolute */
+        overflow: visible;  /* BARU: supaya ornamen tidak terpotong tepi kartu */
+      }
+
+      .pet-ornamen {
+        position: absolute;
+        font-size: 14px;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* Elang: daun/ranting bergoyang pelan di 2 sudut, seolah tertiup angin */
+      @keyframes daunGoyang {
+        0%   { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
+        50%  { transform: rotate(15deg) translateY(-2px); opacity: 1; }
+        100% { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
+      }
+      .ornamen-elang { animation: daunGoyang 1.8s ease-in-out infinite; }
+
+      /* Singa: kilat kecil muncul-hilang cepat di sudut, sinkron rasanya dengan flash border */
+      @keyframes kilatMuncul {
+        0%, 90%, 100% { opacity: 0; transform: scale(0.7); }
+        3%, 6%        { opacity: 1; transform: scale(1.15); }
+        45%, 48%      { opacity: 1; transform: scale(1.1); }
+      }
+      .ornamen-singa { animation: kilatMuncul 2.4s linear infinite; }
+
+      /* Naga: percikan api kecil naik-turun & membesar-mengecil di sudut */
+      @keyframes apiMenyala {
+        0%   { transform: translateY(0) scale(0.9); opacity: 0.8; }
+        50%  { transform: translateY(-3px) scale(1.15); opacity: 1; }
+        100% { transform: translateY(0) scale(0.9); opacity: 0.8; }
+      }
+      .ornamen-naga { animation: apiMenyala 1.1s ease-in-out infinite; }
+    `;
+    document.head.appendChild(style);
+  }
 
   const now = new Date();
 
@@ -276,8 +361,8 @@ function showBookingList(data) {
     .map(row => {
       if (!row.tanggal || !row.jam || !row.durasi) return null;
 
-      const [jam, menit] = String(row.jam).split(":").map(Number);
-      const [tahun, bulan, tanggal] = String(row.tanggal).split("-").map(Number);
+      const [jam, menit] = row.jam.split(":").map(Number);
+      const [tahun, bulan, tanggal] = row.tanggal.split("-").map(Number);
       const durasiMenit = parseInt(row.durasi);
 
       if ([jam, menit, tahun, bulan, tanggal, durasiMenit].some(isNaN)) return null;
@@ -285,7 +370,6 @@ function showBookingList(data) {
       const startTime = new Date(tahun, bulan - 1, tanggal, jam, menit);
       const endTime = new Date(startTime.getTime() + durasiMenit * 60000);
       const isPlaying = now >= startTime && now <= endTime;
-
       return { ...row, startTime, endTime, isPlaying };
     })
     .filter(row => row && row.endTime > now)
@@ -297,13 +381,14 @@ function showBookingList(data) {
         Tidak ada booking aktif
       </div>
     `;
-  } else {
+ } else {
     dataAktif.forEach(row => {
       const endStr = row.endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const statusBadge = row.isPlaying ? "🔥 SEDANG MAIN" : "⏳ MENUNGGU";
 
-      // BARU: border kustom user (fallback default kalau belum ada)
-      const borderCSS = BORDER_STYLES[row.border] || BORDER_STYLES.border_default;
+      // 🆕 GANTI SEMUA baris lama yang pakai BORDER_STYLES_SESI / BORDER_COLORS_SESI jadi ini:
+      const warnaBorder = row.borderWarna || "#dddddd";
+      const borderCSS = `1px solid ${warnaBorder}`;
 
       const bgCard = row.isPlaying
         ? `background: rgba(46, 204, 113, 0.12); border: ${borderCSS};`
@@ -311,34 +396,32 @@ function showBookingList(data) {
 
       const card = document.createElement("div");
 
-      // BARU: class animasi border, cuma aktif kalau sesi sedang berjalan
-      const kelasAnimasi = row.isPlaying ? (PET_ANIMASI_CLASS[row.pet] || "") : "";
+      const kelasAnimasi = row.isPlaying ? (GAYA_ANIMASI_CLASS[row.petGaya] || "") : "";
       card.className = row.isPlaying ? `card-booking-aktif ${kelasAnimasi}`.trim() : "";
 
       card.style.cssText = `
         display: flex; flex-direction: column; gap: 6px;
-        ${bgCard} padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box;
+        ${bgCard}
+        padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box;
       `;
 
-      // BARU: warna animasi ikut border tier user
-      card.style.setProperty('--warna-kostum', BORDER_COLORS[row.border] || BORDER_COLORS.border_default);
-
-      // BARU: ornamen sudut (daun/kilat/api) sesuai pet, cuma kalau sedang aktif
-      const ornamenSudut = row.isPlaying ? buatOrnamenSudut(row.pet) : "";
-
+      card.style.setProperty('--warna-kostum', warnaBorder);
+      const ornamenSudut = row.isPlaying ? buatOrnamenSudut(row.petGaya, row.petIcon) : "";
+      const borderBadge = row.borderIcon
+      ? `<span style="font-size:14px;" title="Border aktif">${row.borderIcon}</span>`
+      : "";
+      
       card.innerHTML = `
-        ${ornamenSudut}
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-          <div style="font-weight:bold;color:#fff;font-size:13px;word-break:break-word;max-width:55%;">
-            ${row.nama}
-          </div>
+       ${ornamenSudut}
+         <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+        <div style="font-weight:bold; color:#fff; font-size:13px; word-break:break-word; max-width:55%; display:flex; align-items:center; gap:6px;">
+          <span>${row.nama}</span>${borderBadge}
+        </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button class="btnSuara" data-nama="${row.nama}"
-              title="${suaraAktif[row.nama] ? 'Suara aktif' : 'Aktifkan suara'}"
-              style="background:none;border:none;cursor:pointer;font-size:20px;">
+            <button class="btnSuara" data-nama="${row.nama}" title="${suaraAktif[row.nama] ? 'Suara aktif' : 'Aktifkan suara'}" style="background:none; border:none; cursor:pointer; font-size:20px;">
               ${suaraAktif[row.nama] ? "🔔" : "🔇"}
             </button>
-            <div style="font-size:10px;font-weight:bold;color:${row.isPlaying ? '#2ecc71' : '#f1c40f'};background:rgba(0,0,0,0.3);padding:3px 6px;border-radius:4px;letter-spacing:.5px;">
+            <div style="font-size:10px; font-weight:bold; color:${row.isPlaying ? '#2ecc71' : '#f1c40f'}; background:rgba(0,0,0,0.3); padding:3px 6px; border-radius:4px; letter-spacing:.5px;">
               ${statusBadge}
             </div>
           </div>
