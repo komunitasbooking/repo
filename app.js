@@ -1,10 +1,7 @@
 // app.js
 // ====================================================================
-// GANTI ini dengan URL Web App GAS kamu (yang berakhiran /exec)
-// ====================================================================
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRVIJrx6z3nvRHFSd2V8KL_v_8g8FIZQS6yS7CGDuPQNEXmxE0KweAMkijpda8ydlbQQ/exec";
 
-// VAPID key dari Firebase Console -> Project Settings -> Cloud Messaging
 const VAPID_KEY = "BPu-CkKjzdXNPh8N-287d2gGxC2dj27HWHdcGvhtDEJ-IMTJGkAlWeJZdsbp8e2QywGAAaR1MUz4owfIwKUnwTQ";
 
 const firebaseConfig = {
@@ -19,33 +16,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// User yang mengaktifkan suara (dipakai juga sebagai identitas utk simpan token push)
 const suaraAktif = JSON.parse(localStorage.getItem("suaraAktif") || "{}");
 let dataBookingTerakhir = [];
 const alarmSudahBunyi = {};
 
-// =================== BARU: Katalog kosmetik (border, pet, ornamen) ===================
-
-const BORDER_COLORS = {
-  border_default: "#dddddd",
-  border_50: "#cd7f32",
-  border_100: "#c0c0c0",
-  border_200: "#ffd700"
-};
-
-const BORDER_STYLES = {
-  border_default: `1px solid ${BORDER_COLORS.border_default}`,
-  border_50: `1px solid ${BORDER_COLORS.border_50}`,
-  border_100: `1px solid ${BORDER_COLORS.border_100}`,
-  border_200: `1px solid ${BORDER_COLORS.border_200}`
-};
-
-const PET_ANIMASI_CLASS = {
-  pet_50: "pet-border-elang",
-  pet_100: "pet-border-singa",
-  pet_200: "pet-border-naga"
-};
-
+// =================== Dinamis: Ornamen ===================
 function buatOrnamenSudut(gaya, icon) {
   if (!gaya || !icon) return "";
   const kelas = "ornamen-" + gaya;
@@ -62,9 +37,10 @@ function buatOrnamenSudut(gaya, icon) {
       .join(";");
     return `<span class="pet-ornamen ${kelas}" style="${posisiCSS}; animation-delay:${p.delay};">${icon}</span>`;
   }).join("");
+}
 
-// Suntik CSS animasi border + ornamen sekali saja saat script dimuat
-function suntikStyleKostum() {
+// =================== Suntik CSS sekali ===================
+(function suntikStyleKostum() {
   if (document.getElementById('styleBookingAktif')) return;
 
   const style = document.createElement('style');
@@ -130,12 +106,18 @@ function suntikStyleKostum() {
       100% { transform: translateY(0) scale(0.9); opacity: 0.8; }
     }
     .ornamen-naga { animation: apiMenyala 1.1s ease-in-out infinite; }
+
+    /* 🆕 Fallback animasi untuk edisi khusus (labu, dll) */
+    @keyframes goyangOrnament {
+      0%, 100% { transform: rotate(-10deg) translateY(0); opacity: 0.9; }
+      50% { transform: rotate(10deg) translateY(-2px); opacity: 1; }
+    }
+    [class^="ornamen-"] { animation: goyangOrnament 2s ease-in-out infinite; }
   `;
   document.head.appendChild(style);
 })();
 
-// =================== Setup Push Notification ===================
-
+// =================== Push Notification ===================
 async function aktifkanNotifikasi() {
   const namaUser = prompt("Masukkan nama kamu (sesuai data booking):");
   if (!namaUser) return;
@@ -179,15 +161,13 @@ window.addEventListener("load", () => {
   }
 });
 
-// =================== Ambil & tampilkan data booking ===================
-
+// =================== Ambil & tampilkan data ===================
 async function muatBookingData() {
   try {
-    const nocache = Date.now(); // 🆕
+    const nocache = Date.now();
     const res = await fetch(`${GAS_API_URL}?action=getAllBookingDenganKostum&nocache=${nocache}`);
     const data = await res.json();
 
-    // 🆕 Bersihkan state lama sebelum render baru
     dataBookingTerakhir = [];
     Object.keys(alarmSudahBunyi).forEach(nama => {
       clearInterval(alarmSudahBunyi[nama]);
@@ -264,8 +244,7 @@ function showBookingList(data) {
   const tbody = document.getElementById("bookingList");
   if (!tbody) return;
   tbody.innerHTML = "";
-  
-  // 🆕 Bersihkan alarm user yang booking-nya sudah tidak ada
+
   const namaAktif = new Set((data || []).map(r => r.nama));
   Object.keys(alarmSudahBunyi).forEach(nama => {
     if (!namaAktif.has(nama)) {
@@ -274,7 +253,6 @@ function showBookingList(data) {
     }
   });
 
-  // Cuma 3 gaya animasi CSS yang memang ada — ini boleh tetap hardcode
   const GAYA_ANIMASI_CLASS = {
     elang: "pet-border-elang",
     singa: "pet-border-singa",
@@ -285,78 +263,6 @@ function showBookingList(data) {
     window.suaraAktif = {};
   }
 
-  // BARU: suntik animasi glow/melayang sekali saja
-  if (!document.getElementById('styleBookingAktif')) {
-    const style = document.createElement('style');
-    style.id = 'styleBookingAktif';
-    style.textContent = `
-    @keyframes windBorder {
-      0%   { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
-      25%  { transform: translateX(1px) rotate(0.3deg); filter: brightness(1.3); }
-      50%  { transform: translateX(-1px) rotate(-0.3deg); filter: brightness(1); }
-      75%  { transform: translateX(1px) rotate(0.2deg); filter: brightness(1.3); }
-      100% { border-color: var(--warna-kostum); transform: translateX(0) rotate(0deg); filter: brightness(1); }
-    }
-    .pet-border-elang { animation: windBorder 2.2s ease-in-out infinite; }
-
-    @keyframes lightningBorder {
-      0%, 100% { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
-      3%       { border-color: #ffffff; box-shadow: 0 0 20px var(--warna-kostum); }
-      6%       { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
-      45%      { border-color: #ffffff; box-shadow: 0 0 18px var(--warna-kostum); }
-      48%      { border-color: var(--warna-kostum); box-shadow: 0 0 4px var(--warna-kostum); }
-    }
-    .pet-border-singa { animation: lightningBorder 2.4s linear infinite; }
-
-    @keyframes fireBorder {
-      0%   { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
-      33%  { box-shadow: 0 0 14px var(--warna-kostum); }
-      66%  { box-shadow: 0 0 10px var(--warna-kostum); }
-      100% { border-color: var(--warna-kostum); box-shadow: 0 0 6px var(--warna-kostum); }
-    }
-    .pet-border-naga { animation: fireBorder 1.1s ease-in-out infinite; }
-
-    .card-booking-aktif { 
-        border-width: 2px; 
-        border-style: solid; 
-        position: relative; /* BARU: perlu relative supaya ornamen sudut bisa absolute */
-        overflow: visible;  /* BARU: supaya ornamen tidak terpotong tepi kartu */
-      }
-
-      .pet-ornamen {
-        position: absolute;
-        font-size: 14px;
-        pointer-events: none;
-        z-index: 2;
-      }
-
-      /* Elang: daun/ranting bergoyang pelan di 2 sudut, seolah tertiup angin */
-      @keyframes daunGoyang {
-        0%   { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
-        50%  { transform: rotate(15deg) translateY(-2px); opacity: 1; }
-        100% { transform: rotate(-15deg) translateY(0); opacity: 0.85; }
-      }
-      .ornamen-elang { animation: daunGoyang 1.8s ease-in-out infinite; }
-
-      /* Singa: kilat kecil muncul-hilang cepat di sudut, sinkron rasanya dengan flash border */
-      @keyframes kilatMuncul {
-        0%, 90%, 100% { opacity: 0; transform: scale(0.7); }
-        3%, 6%        { opacity: 1; transform: scale(1.15); }
-        45%, 48%      { opacity: 1; transform: scale(1.1); }
-      }
-      .ornamen-singa { animation: kilatMuncul 2.4s linear infinite; }
-
-      /* Naga: percikan api kecil naik-turun & membesar-mengecil di sudut */
-      @keyframes apiMenyala {
-        0%   { transform: translateY(0) scale(0.9); opacity: 0.8; }
-        50%  { transform: translateY(-3px) scale(1.15); opacity: 1; }
-        100% { transform: translateY(0) scale(0.9); opacity: 0.8; }
-      }
-      .ornamen-naga { animation: apiMenyala 1.1s ease-in-out infinite; }
-    `;
-    document.head.appendChild(style);
-  }
-
   const now = new Date();
 
   const namaJenis = { HP: "REGULER", PS2: "VIP", PS3: "VVIP", PS4: "ULTRA VIP" };
@@ -365,13 +271,10 @@ function showBookingList(data) {
   const dataAktif = data
     .map(row => {
       if (!row.tanggal || !row.jam || !row.durasi) return null;
-
       const [jam, menit] = row.jam.split(":").map(Number);
       const [tahun, bulan, tanggal] = row.tanggal.split("-").map(Number);
       const durasiMenit = parseInt(row.durasi);
-
       if ([jam, menit, tahun, bulan, tanggal, durasiMenit].some(isNaN)) return null;
-
       const startTime = new Date(tahun, bulan - 1, tanggal, jam, menit);
       const endTime = new Date(startTime.getTime() + durasiMenit * 60000);
       const isPlaying = now >= startTime && now <= endTime;
@@ -379,19 +282,20 @@ function showBookingList(data) {
     })
     .filter(row => row && row.endTime > now)
     .sort((a, b) => a.startTime - b.startTime);
+
   dataBookingTerakhir = dataAktif;
+
   if (dataAktif.length === 0) {
     tbody.innerHTML = `
       <div style="text-align: center; padding: 20px; color: #aaa; font-size: 13px; border: 1px dashed #444; border-radius: 6px;">
         Tidak ada booking aktif
       </div>
     `;
- } else {
+  } else {
     dataAktif.forEach(row => {
       const endStr = row.endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const statusBadge = row.isPlaying ? "🔥 SEDANG MAIN" : "⏳ MENUNGGU";
 
-      // 🆕 GANTI SEMUA baris lama yang pakai BORDER_STYLES_SESI / BORDER_COLORS_SESI jadi ini:
       const warnaBorder = row.borderWarna || "#dddddd";
       const borderCSS = `1px solid ${warnaBorder}`;
 
@@ -413,9 +317,9 @@ function showBookingList(data) {
       card.style.setProperty('--warna-kostum', warnaBorder);
       const ornamenSudut = row.isPlaying ? buatOrnamenSudut(row.petGaya, row.petIcon) : "";
       const borderBadge = row.borderIcon
-      ? `<span style="font-size:14px;" title="Border aktif">${row.borderIcon}</span>`
-      : "";
-      
+        ? `<span style="font-size:14px;" title="Border aktif">${row.borderIcon}</span>`
+        : "";
+
       card.innerHTML = `
        ${ornamenSudut}
          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
