@@ -192,9 +192,16 @@ window.addEventListener("load", () => {
 
 async function muatBookingData() {
   try {
-    // BARU: action diganti supaya server menyisipkan border & pet, bukan data booking polos
-    const res = await fetch(`${GAS_API_URL}?action=getAllBookingDenganKostum`);
+    const nocache = Date.now(); // 🆕
+    const res = await fetch(`${GAS_API_URL}?action=getAllBookingDenganKostum&nocache=${nocache}`);
     const data = await res.json();
+
+    // 🆕 Bersihkan state lama sebelum render baru
+    dataBookingTerakhir = [];
+    Object.keys(alarmSudahBunyi).forEach(nama => {
+      clearInterval(alarmSudahBunyi[nama]);
+      delete alarmSudahBunyi[nama];
+    });
 
     const dataNormalisasi = data.map(row => ({
       ...row,
@@ -263,11 +270,18 @@ messaging.onMessage((payload) => {
 });
 
 function showBookingList(data) {
-  dataBookingTerakhir = data || [];
   const tbody = document.getElementById("bookingList");
-  if (!tbody) return console.error("❌ Elemen #bookingList tidak ditemukan di HTML!");
-
+  if (!tbody) return;
   tbody.innerHTML = "";
+  
+  // 🆕 Bersihkan alarm user yang booking-nya sudah tidak ada
+  const namaAktif = new Set((data || []).map(r => r.nama));
+  Object.keys(alarmSudahBunyi).forEach(nama => {
+    if (!namaAktif.has(nama)) {
+      clearInterval(alarmSudahBunyi[nama]);
+      delete alarmSudahBunyi[nama];
+    }
+  });
 
   // Cuma 3 gaya animasi CSS yang memang ada — ini boleh tetap hardcode
   const GAYA_ANIMASI_CLASS = {
@@ -374,7 +388,7 @@ function showBookingList(data) {
     })
     .filter(row => row && row.endTime > now)
     .sort((a, b) => a.startTime - b.startTime);
-
+  dataBookingTerakhir = dataAktif;
   if (dataAktif.length === 0) {
     tbody.innerHTML = `
       <div style="text-align: center; padding: 20px; color: #aaa; font-size: 13px; border: 1px dashed #444; border-radius: 6px;">
